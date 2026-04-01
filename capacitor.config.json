@@ -1,0 +1,23 @@
+{
+  "appId": "com.maharajaagarsen.app",
+  "appName": "Mah-Setu",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#FFFFFF"
+    },
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "showSpinner": false,
+      "fadeOutDuration": 500
+    },
+    "LocalNotifications": {
+      "iconColor": "#4F46E5"
+    }
+  },
+  "android": {
+    "backgroundColor": "#FFFFFF"
+  }
+}

@@ -1,0 +1,651 @@
+import React, { useState, useEffect } from 'react';
+import { User, Users, Stethoscope, Building2, Star, Award, ChevronLeft, Phone, Mail, MapPin, FileText, Clock } from 'lucide-react';
+import { getProfilePhotos } from './services/api';
+
+const MemberDetails = ({ member, onNavigateBack, previousScreenName }) => {
+  const [profilePhoto, setProfilePhoto] = useState(null);
+
+  useEffect(() => {
+    const fetchPhoto = async () => {
+      const memberIds = [];
+      if (member['Membership number']) memberIds.push(member['Membership number']);
+      if (member.membership_number) memberIds.push(member.membership_number);
+      if (member.Mobile) memberIds.push(member.Mobile);
+      if (member.mobile) memberIds.push(member.mobile);
+      if (member.phone1) memberIds.push(member.phone1);
+      if (member.phone2) memberIds.push(member.phone2);
+      if (member.member_id) memberIds.push(member.member_id);
+      
+      const idsToFetch = memberIds.filter(id => id && id !== 'N/A');
+      if (idsToFetch.length === 0) return;
+      
+      try {
+        const response = await getProfilePhotos(idsToFetch);
+        if (response.success && response.photos) {
+          const photo = idsToFetch.map(id => response.photos[id]).find(p => p);
+          if (photo) setProfilePhoto(photo);
+        }
+      } catch (err) {
+        console.error('Error fetching member photo:', err);
+      }
+    };
+    
+    fetchPhoto();
+  }, [member]);
+
+  // Get screen name for back button
+  const getScreenName = () => {
+    if (!previousScreenName) return 'Directory';
+    
+    // Handle both route paths and screen names
+    const screenName = previousScreenName.replace(/^\//, ''); // Remove leading slash if present
+    
+    const screenNames = {
+      'directory': 'Directory',
+      '/directory': 'Directory',
+      'healthcare-trustee-directory': 'Directory',
+      '/healthcare-trustee-directory': 'Directory',
+      'healthcare': 'Healthcare Directory',
+      'trustees': 'Trustees',
+      'patrons': 'Patrons',
+      'committee': 'Committee',
+      'doctors': 'Doctors',
+      'hospitals': 'Hospitals',
+      '/': 'Home'
+    };
+    
+    return screenNames[previousScreenName] || screenNames[screenName] || 'Directory';
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Section */}
+      <div className="bg-white px-6 pt-6 pb-4 shadow-sm">
+          <div className="flex items-center mb-4">
+            <button 
+              onClick={onNavigateBack}
+              className="p-2 rounded-xl hover:bg-gray-100 transition-colors flex items-center gap-1 text-indigo-600"
+            >
+              <ChevronLeft className="h-5 w-5" />
+              <span className="text-sm font-medium">Back</span>
+            </button>
+            <h1 className="text-2xl font-bold text-gray-800 flex-1 text-center pr-16">Member Details</h1>
+          </div>
+      </div>
+
+      {/* Member Details Card */}
+      <div className="p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="bg-indigo-100 h-20 w-20 rounded-2xl flex items-center justify-center text-indigo-600 overflow-hidden shadow-sm border border-indigo-200">
+              {profilePhoto ? (
+                <img 
+                  src={profilePhoto} 
+                  alt={member.member_name_english || member.Name || 'Member'} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.style.display = 'none';
+                    const iconContainer = e.target.parentElement;
+                    if (member.type && member.type.toLowerCase().includes('doctor')) {
+                      iconContainer.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-stethoscope h-8 w-8 text-indigo-600"><path d="M4.8 2.3A.3.3 0 1 0 5 2a.3.3 0 0 0-.2.3Z"/><path d="M10 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z"/><path d="M10 7v10.5c0 .3.2.5.5.5h3c.3 0 .5-.2.5-.5V7"/><path d="M12 17v4"/><path d="M8 21h8"/></svg>';
+                    } else if (member.type && member.type.toLowerCase().includes('committee')) {
+                      iconContainer.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users h-8 w-8 text-indigo-600"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+                    } else if (member.type && (member.type.toLowerCase().includes('trustee') || member.type.toLowerCase().includes('patron'))) {
+                      iconContainer.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star h-8 w-8 text-indigo-600"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+                    } else {
+                      iconContainer.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user h-8 w-8 text-indigo-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+                    }
+                  }}
+                />
+              ) : (
+                member.type && member.type.toLowerCase().includes('doctor') ? <Stethoscope className="h-8 w-8 text-indigo-600" /> : 
+                member.type && member.type.toLowerCase().includes('committee') ? <Users className="h-8 w-8 text-indigo-600" /> : 
+                member.type && (member.type.toLowerCase().includes('trustee') || member.type.toLowerCase().includes('patron')) ? <Star className="h-8 w-8 text-indigo-600" /> : 
+                <User className="h-8 w-8 text-indigo-600" />
+              )}
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">{member.member_name_english || member.Name || 'N/A'}</h2>
+                {!member.isHospitalMember && (
+                  <p className="text-indigo-600 text-sm font-medium">{member.member_role || member.type || 'N/A'}</p>
+                )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {/* Determine if this is a healthcare member (from opd_schedule) or committee member */}
+            {(() => {
+              const isHealthcareMember = member.isHealthcareMember || 
+                                        !!member.consultant_name || 
+                                        (member.original_id && member.original_id.toString().startsWith('DOC')) ||
+                                        (member['S. No.'] && member['S. No.'].toString().startsWith('DOC'));
+              const isCommitteeMember = member.isCommitteeMember || 
+                                       (member.original_id && member.original_id.toString().startsWith('CM')) ||
+                                       (member['S. No.'] && member['S. No.'].toString().startsWith('CM'));
+              const isElectedMember = member.isElectedMember || 
+                                     (member.elected_id !== undefined && member.elected_id !== null) ||
+                                     (member.original_id && member.original_id.toString().startsWith('ELECT')) ||
+                                     (member['S. No.'] && member['S. No.'].toString().startsWith('ELECT'));
+              
+              // Show elected member fields (merged with Members Table) - Show ALL fields from both tables
+              if (isElectedMember) {
+                return (
+                  <>
+                    {/* Members Table fields */}
+                    {member['Membership number'] && member['Membership number'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Award className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Membership Number</p>
+                          <p className="font-medium text-gray-800">{member['Membership number'] || member.membership_number}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Name'] && member['Name'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <User className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Name</p>
+                          <p className="font-medium text-gray-800">{member['Name']}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Elected-specific fields */}
+                    {member.position && member.position !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Award className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Position (Elected)</p>
+                          <p className="font-medium text-gray-800">{member.position}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member.location && member.location !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <MapPin className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Location (Elected)</p>
+                          <p className="font-medium text-gray-800">{member.location}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                      {member['Company Name'] && member['Company Name'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Building2 className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Company Name</p>
+                          <p className="font-medium text-gray-800">{member['Company Name']}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Mobile'] && member['Mobile'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Phone className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Mobile</p>
+                          <a href={`tel:${member['Mobile'].replace(/\s+/g, '').split(',')[0]}`} className="font-medium text-indigo-600 hover:underline">
+                            {member['Mobile']}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Email'] && member['Email'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Mail className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Email</p>
+                          <a href={`mailto:${member['Email']}`} className="font-medium text-indigo-600 hover:underline">
+                            {member['Email']}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Address Home'] && member['Address Home'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <MapPin className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Address Home</p>
+                          <p className="font-medium text-gray-800">{member['Address Home']}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Address Office'] && member['Address Office'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <MapPin className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Address Office</p>
+                          <p className="font-medium text-gray-800">{member['Address Office']}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Resident Landline'] && member['Resident Landline'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Phone className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Resident Landline</p>
+                          <a href={`tel:${member['Resident Landline'].replace(/\s+/g, '').split(',')[0]}`} className="font-medium text-indigo-600 hover:underline">
+                            {member['Resident Landline']}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Office Landline'] && member['Office Landline'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Phone className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Office Landline</p>
+                          <a href={`tel:${member['Office Landline'].replace(/\s+/g, '').split(',')[0]}`} className="font-medium text-indigo-600 hover:underline">
+                            {member['Office Landline']}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Display any other elected-specific fields */}
+                      {Object.keys(member).filter(key => 
+                        !['S. No.', 'Name', 'Mobile', 'Email', 'type', 'Membership number', 'isElectedMember', 
+                          'previousScreenName', 'isHealthcareMember', 'isHospitalMember', 'isCommitteeMember',
+                          'Company Name', 'Address Home', 'Address Office', 'Resident Landline', 'Office Landline',
+                          'position', 'location', 'id', 'original_id', 'elected_id', 'membership_number_elected',
+                          'is_merged_with_member', 'created_at', 'updated_at', 'company_name', 'is_committee_member'].includes(key) &&
+                        member[key] !== null && member[key] !== undefined && member[key] !== '' && member[key] !== 'N/A'
+                      ).map(key => (
+                      <div key={key} className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <FileText className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">{key.replace(/_/g, ' ')}</p>
+                          <p className="font-medium text-gray-800">{String(member[key])}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                );
+              }
+              
+              // Show committee-specific fields if it's a committee member - Show ALL Supabase fields
+              if (isCommitteeMember) {
+                return (
+                  <>
+                    {member.member_name_english && member.member_name_english !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <User className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Member Name (English)</p>
+                          <p className="font-medium text-gray-800">{member.member_name_english}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member.member_name_hindi && member.member_name_hindi !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <User className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Member Name (Hindi)</p>
+                          <p className="font-medium text-gray-800">{member.member_name_hindi}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member.committee_name_english && member.committee_name_english !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Building2 className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Committee Name (English)</p>
+                          <p className="font-medium text-gray-800">{member.committee_name_english}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member.committee_name_hindi && member.committee_name_hindi !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Building2 className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Committee Name (Hindi)</p>
+                          <p className="font-medium text-gray-800">{member.committee_name_hindi}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member.member_role && member.member_role !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Award className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Role</p>
+                          <p className="font-medium text-gray-800">{member.member_role}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member.membership_number && member.membership_number !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Award className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Membership Number</p>
+                          <p className="font-medium text-gray-800">{member.membership_number}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member.member_id && member.member_id !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <User className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Member ID</p>
+                          <p className="font-medium text-gray-800">{member.member_id}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member.phone1 && member.phone1 !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Phone className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Phone 1</p>
+                          <a href={`tel:${member.phone1.replace(/\s+/g, '').split(',')[0]}`} className="font-medium text-indigo-600 hover:underline">
+                            {member.phone1}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member.phone2 && member.phone2 !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Phone className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Phone 2</p>
+                          <a href={`tel:${member.phone2.replace(/\s+/g, '').split(',')[0]}`} className="font-medium text-indigo-600 hover:underline">
+                            {member.phone2}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {(member.Mobile && member.Mobile !== 'N/A') && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Phone className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Mobile</p>
+                          <a href={`tel:${member.Mobile.replace(/\s+/g, '').split(',')[0]}`} className="font-medium text-indigo-600 hover:underline">
+                            {member.Mobile}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member.Email && member.Email !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Mail className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Email</p>
+                          <a href={`mailto:${member.Email}`} className="font-medium text-indigo-600 hover:underline">
+                            {member.Email}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member.address && member.address !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <MapPin className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Address</p>
+                          <p className="font-medium text-gray-800">{member.address}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Address Home'] && member['Address Home'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <MapPin className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Address Home</p>
+                          <p className="font-medium text-gray-800">{member['Address Home']}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Address Office'] && member['Address Office'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <MapPin className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Address Office</p>
+                          <p className="font-medium text-gray-800">{member['Address Office']}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                      {/* Display any other fields that might exist in Supabase */}
+                      {Object.keys(member).filter(key => 
+                        !['S. No.', 'Name', 'Mobile', 'Email', 'type', 'Membership number', 'isCommitteeMember', 
+                          'previousScreenName', 'member_name_english', 'member_name_hindi', 'member_role', 
+                          'committee_name_english', 'committee_name_hindi', 'phone1', 'phone2', 'address', 
+                          'Address Home', 'Address Office', 'id', 'original_id', 'company_name', 'Company Name', 
+                          'created_at', 'Created At', 'updated_at', 'Updated At', 'is_committee_member', 
+                          'Is Committee Member', 'is_committee_group', 'committee_members'].includes(key) &&
+                        member[key] !== null && member[key] !== undefined && member[key] !== '' && member[key] !== 'N/A'
+                      ).map(key => (
+                      <div key={key} className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <FileText className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">{key.replace(/_/g, ' ')}</p>
+                          <p className="font-medium text-gray-800">{String(member[key])}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                );
+              }
+              
+              // Show Members Table fields only if NOT a healthcare member, NOT a committee member, and NOT an elected member
+              if (!isHealthcareMember && !isElectedMember) {
+                return (
+                  <>
+                    {member['Membership number'] && member['Membership number'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Award className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Membership No</p>
+                          <p className="font-medium text-gray-800">{member['Membership number']}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Name'] && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <User className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Name</p>
+                          <p className="font-medium text-gray-800">{member['Name']}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Company Name'] && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Building2 className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Company</p>
+                          <p className="font-medium text-gray-800">{member['Company Name']}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Address Home'] && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <MapPin className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Address Home</p>
+                          <p className="font-medium text-gray-800">{member['Address Home']}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Address Office'] && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <MapPin className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Office Address</p>
+                          <p className="font-medium text-gray-800">{member['Address Office']}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Mobile'] && member['Mobile'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Phone className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Mobile</p>
+                          <a href={`tel:${member['Mobile'].replace(/\s+/g, '').split(',')[0]}`} className="font-medium text-indigo-600 hover:underline">
+                            {member['Mobile']}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Resident Landline'] && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Phone className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Resident Landline</p>
+                          <a href={`tel:${member['Resident Landline'].replace(/\s+/g, '').split(',')[0]}`} className="font-medium text-indigo-600 hover:underline">
+                            {member['Resident Landline']}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Office Landline'] && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Phone className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Office Landline</p>
+                          <a href={`tel:${member['Office Landline'].replace(/\s+/g, '').split(',')[0]}`} className="font-medium text-indigo-600 hover:underline">
+                            {member['Office Landline']}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {member['Email'] && member['Email'] !== 'N/A' && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Mail className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Email</p>
+                          <a href={`mailto:${member['Email']}`} className="font-medium text-indigo-600 hover:underline">
+                            {member['Email']}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    </>
+                  );
+                }
+                
+                // Show healthcare-specific fields (from opd_schedule) only if this is a healthcare member
+              return (
+                <>
+                  {member.consultant_name && member.consultant_name !== 'N/A' && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                      <User className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Consultant Name</p>
+                        <p className="font-medium text-gray-800">{member.consultant_name}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {member.department && member.department !== 'N/A' && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                      <Building2 className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Department</p>
+                        <p className="font-medium text-gray-800">{member.department}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {member.designation && member.designation !== 'N/A' && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                      <User className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Designation</p>
+                        <p className="font-medium text-gray-800">{member.designation}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {member.qualification && member.qualification !== 'N/A' && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                      <Award className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Qualification</p>
+                        <p className="font-medium text-gray-800">{member.qualification}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {member.unit && member.unit !== 'N/A' && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                      <Building2 className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Unit</p>
+                        <p className="font-medium text-gray-800">{member.unit}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {member.general_opd_days && member.general_opd_days !== 'N/A' && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                      <Clock className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">General OPD Days</p>
+                        <p className="font-medium text-gray-800">{member.general_opd_days}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {member.private_opd_days && member.private_opd_days !== 'N/A' && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                      <Clock className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Private OPD Days</p>
+                        <p className="font-medium text-gray-800">{member.private_opd_days}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {member['Mobile'] && member['Mobile'] !== 'N/A' && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                      <Phone className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Mobile</p>
+                        <a href={`tel:${member['Mobile'].replace(/\s+/g, '').split(',')[0]}`} className="font-medium text-indigo-600 hover:underline">
+                          {member['Mobile']}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  
+                  </>
+                );
+              })()}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MemberDetails;
